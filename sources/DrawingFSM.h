@@ -9,37 +9,128 @@
 
 extern Texture2D canvas_texture;
 
+enum state {
+    DRAW = 0,
+    EDIT,
+    MOVE,
+    IDLE,
+    DELETE
+};
+
 class DrawingFSM {
 public:
     Shape *current_shape;
     // I don't have a clue why I am unable to import proper header to be able to use std::vector,
     // and honestly I don't care, this is not something that should be graded on this subject
     Shape *shapes[20];
-    int idx = 0;
+    int count = 0;
     //point points[CANVAS_SIZE][CANVAS_SIZE];
     //int p_idx = 0;
+    enum state state = IDLE;
+    point *p = nullptr;
+
+    void redraw_all()
+    {
+        // clear the canvas
+        pixel *pi;
+        for(int i = 0; i < CANVAS_SIZE; i++)
+        {
+            for(int j = 0; j < CANVAS_SIZE; j++)
+            {
+                pi = get_pixel(canvas, i, j);
+                pi->r = 0xff;
+                pi->g = 0xff;
+                pi->b = 0xff;
+                pi->a = 0xff;
+            }
+        }
+        for(int i = 0; i < count; i++) {
+            if(shapes[i]->get_state() != FINISHED) {
+                continue;
+            }
+            shapes[i]->draw();
+        }
+        UpdateTexture(canvas_texture, canvas.data);
+    }
 
     void handle_click(Vector2 pos)
     {
-        if(current_shape == nullptr) {
+        int x = (int)pos.x;
+        int y = (int)pos.y;
+        printf("x: %d, y: %d\n", x, y);
+        if(x >= CANVAS_SIZE || y >= CANVAS_SIZE) {
             return;
         }
-        if(pos.x < CANVAS_SIZE && pos.y < CANVAS_SIZE) {
-            printf("x: %f, y: %f\n", pos.x, pos.y);
+        if(state == EDIT) {
+            for(int i = 0; i < count; i++) {
+                if(shapes[i]->get_state() != FINISHED) {
+                    //printf("Shapes: %d, i: %d!\n", count, i);
+                    continue;
+                }
+                p = shapes[i]->get_vertex(x, y);
+                if(p != nullptr) {
+                    state = MOVE;
+                    break;
+                }
+            }
+        } else if(state == MOVE) {
+            if(p == nullptr) {
+                printf("Something went wrong!\n");
+                state = IDLE;
+                return;
+            }
+            p->x = x;
+            p->y = y;
+            p = nullptr;
+            redraw_all();
+            state = IDLE;
+        } else if(state == DRAW) {
+            if(current_shape == nullptr) {
+                return;
+            }
             shape_state ret;
-            ret = current_shape->add_point((int) pos.x, (int) pos.y);
+            ret = current_shape->add_point(x, y);
             if(ret == FINISHED) {
-                current_shape->draw();
-                UpdateTexture(canvas_texture, canvas.data);
                 current_shape = nullptr;
+                redraw_all();
+                state = IDLE;
+            }
+        } else if(state == DELETE) {
+            for(int i = 0; i < count; i++) {
+                if(shapes[i]->get_state() != FINISHED) {
+                    //printf("Shapes: %d, i: %d!\n", count, i);
+                    continue;
+                }
+                p = shapes[i]->get_vertex(x, y);
+                if(p != nullptr) {
+                    shapes[i]->set_state(NOT_FINISHED);
+                    redraw_all();
+                    state = IDLE;
+                    return;
+                }
             }
         }
     }
 
     void draw_line()
     {
+        if(state == DRAW) {
+            return;
+        }
         current_shape = new Line();
-        shapes[idx++] = current_shape;
+        shapes[count++] = current_shape;
+        printf("count: %d\n", count);
+        state = DRAW;
+    }
+
+    void edit_shape()
+    {
+        state = EDIT;
+    }
+
+    void delete_point()
+    {
+        state = DELETE;
     }
 };
 

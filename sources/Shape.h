@@ -21,18 +21,22 @@ typedef enum {
 #include "Canvas.h"
 #include "Lecture.h"
 
-typedef struct {
+struct point {
     int x;
     int y;
-} point;
+};
+typedef struct point point;
 
 class Shape {
 public:
     // draw the shape to the canvas
     virtual void draw() = 0;
-    // add
+    // add next point to shape
     virtual shape_state add_point(int x, int y) = 0;
-    shape_state state;
+    // returns a point or nullptr if not a vertex
+    virtual point *get_vertex(int x, int y) = 0;
+    virtual shape_state get_state() = 0;
+    virtual shape_state set_state(shape_state s) = 0;
 };
 
 class Line: public Shape {
@@ -98,7 +102,9 @@ public:
         }
         width = w;
     }
-    //shape_state state;
+
+    shape_state state = NOT_FINISHED;
+
     void draw() {
         pixel *p;
         int x0 = points[0].x;
@@ -129,7 +135,43 @@ public:
                 .x = x,
                 .y = y
         };
-        return count == 2 ? FINISHED : NOT_FINISHED;
+        if(count == 2) {
+            state = FINISHED;
+        }
+        return get_state();
+    }
+
+    shape_state get_state()
+    {
+        return state;
+    }
+    shape_state set_state(shape_state s)
+    {
+        state = s;
+    }
+
+    point *get_vertex(int x, int y) {
+        printf("Checking for vertex near [%d, %d]\n", x, y);
+        // pixel-perfect
+        for(int i = 0; i < count; i++) {
+            if(points[i].x == x && points[i].y == y) {
+                return &points[i];
+            }
+        }
+        // in proximity
+        int x_max, x_min, y_max, y_min;
+        int radius = 3;
+        for(int i = 0; i < count; i++) {
+            x_max = points[i].x + 3;
+            x_min = points[i].x - 3;
+            y_max = points[i].y + 3;
+            y_min = points[i].y - 3;
+            if(x < x_max && x > x_min && y < y_max && y > y_min) {
+                printf("Returning vertex #%d\n", i);
+                return &points[i];
+            }
+        }
+        return nullptr;
     }
 };
 

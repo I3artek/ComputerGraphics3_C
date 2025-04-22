@@ -23,6 +23,13 @@ Texture2D canvas_texture;
 
 int main(void)
 {
+    // help printed
+    printf("L - draw a line\n");
+    printf("P - draw a polygon\n");
+    printf("C - draw a circle\n");
+    printf("E - move a point\n");
+    printf("D - delete a shape containing chosen point\n");
+
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
     SetTargetFPS(60);
 
@@ -64,33 +71,22 @@ int main(void)
             Vector2 pos = GetMousePosition();
             fsm->handle_click(pos);
             //printf("x: %f, y: %f\n", pos.x, pos.y);
-//            if(pos.x < CANVAS_SIZE && pos.y < CANVAS_SIZE)
-//            {
-//                printf("x: %f, y: %f\n", pos.x, pos.y);
-//
-//                p = gp((int)pos.x, (int)pos.y);
-//                p->r = 0;
-//                p->g = 0;
-//                p->b = 0;
-//                p->a = 0;
-//                UpdateTexture(canvas_texture, canvas.data);
-//                l->draw();
-//            }
         }
 
+        // handle keyboard shortcuts
         if(IsKeyDown(KEY_L)) fsm->draw_line();
+        if(IsKeyDown(KEY_E)) fsm->edit_shape();
+        if(IsKeyDown(KEY_D)) fsm->delete_point();
 
         BeginDrawing();
 
         ClearBackground(BLACK);
 
-        const int texture_x = 0;//SCREEN_WIDTH / 2 - texture.width / 2;
-        const int texture_y = 0;//SCREEN_HEIGHT / 2 - texture.height / 2;
-        DrawTexture(canvas_texture, texture_x, texture_y, WHITE);
+        DrawTexture(canvas_texture, 0, 0, WHITE);
 
-        const char* text = "OMG! IT WORKS!";
-        const Vector2 text_size = MeasureTextEx(GetFontDefault(), text, 20, 1);
-        DrawText(text, SCREEN_WIDTH / 2 - text_size.x / 2, texture_y + texture.height + text_size.y + 10, 20, BLACK);
+//        const char* text = "OMG! IT WORKS!";
+//        const Vector2 text_size = MeasureTextEx(GetFontDefault(), text, 20, 1);
+//        DrawText(text, SCREEN_WIDTH / 2 - text_size.x / 2, texture_y + texture.height + text_size.y + 10, 20, BLACK);
 
         EndDrawing();
     }
