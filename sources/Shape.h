@@ -27,6 +27,8 @@ struct point {
 };
 typedef struct point point;
 
+extern Texture2D canvas_texture;
+
 class Shape {
 public:
     // draw the shape to the canvas
@@ -41,6 +43,7 @@ public:
 
 class Line: public Shape {
 private:
+    shape_state state = NOT_FINISHED;
     point points[2];
     int count = 0;
     int width = 1;
@@ -103,7 +106,18 @@ public:
         width = w;
     }
 
-    shape_state state = NOT_FINISHED;
+    void set_color(uint8_t r, uint8_t g, uint8_t b)
+    {
+        return;
+    }
+
+    void new_vertices(int x0, int y0, int x1, int y1)
+    {
+        points[0].x = x0;
+        points[0].y = y0;
+        points[1].x = x1;
+        points[1].y = y1;
+    }
 
     void draw() {
         pixel *p;
@@ -143,6 +157,9 @@ public:
 
     shape_state get_state()
     {
+        if(count != 2) {
+            state = NOT_FINISHED;
+        }
         return state;
     }
     shape_state set_state(shape_state s)
@@ -155,23 +172,139 @@ public:
         // pixel-perfect
         for(int i = 0; i < count; i++) {
             if(points[i].x == x && points[i].y == y) {
+                printf("Returning vertex #%d\n", i);
                 return &points[i];
             }
         }
         // in proximity
         int x_max, x_min, y_max, y_min;
-        int radius = 3;
+        int radius = 10;
         for(int i = 0; i < count; i++) {
-            x_max = points[i].x + 3;
-            x_min = points[i].x - 3;
-            y_max = points[i].y + 3;
-            y_min = points[i].y - 3;
+            x_max = points[i].x + radius;
+            x_min = points[i].x - radius;
+            y_max = points[i].y + radius;
+            y_min = points[i].y - radius;
             if(x < x_max && x > x_min && y < y_max && y > y_min) {
                 printf("Returning vertex #%d\n", i);
                 return &points[i];
             }
         }
         return nullptr;
+    }
+};
+
+class Polygon: public Shape {
+private:
+    shape_state state = NOT_FINISHED;
+    // number of points is also the number of lines
+    const static int max_points = 20;
+    point points[max_points];
+    int count = 0;
+    int width = 1;
+    Line lines[max_points];
+public:
+    void set_width(int w)
+    {
+        if(w % 2 == 0) {
+            return;
+        }
+        width = w;
+    }
+
+    void set_color(uint8_t r, uint8_t g, uint8_t b)
+    {
+        return;
+    }
+
+    void regenerate_lines()
+    {
+        if(get_state() != FINISHED) {
+            return;
+        }
+        point *p0;
+        point *p1;
+        for(int i = 0; i < count - 1; i++)
+        {
+            p0 = &points[i];
+            p1 = &points[(i + 1) % count];
+            lines[i].new_vertices(p0->x, p0->y, p1->x, p1->y);
+        }
+    }
+
+    void draw()
+    {
+        regenerate_lines();
+        for(int i = 0; i < count; i++)
+        {
+            lines[i].draw();
+        }
+    }
+
+    point *get_vertex(int x, int y) {
+        printf("Checking for vertex near [%d, %d]\n", x, y);
+        // pixel-perfect
+        for(int i = 0; i < count; i++) {
+            if(points[i].x == x && points[i].y == y) {
+                printf("Returning vertex #%d\n", i);
+                return &points[i];
+            }
+        }
+        // in proximity
+        int x_max, x_min, y_max, y_min;
+        int radius = 10;
+        for(int i = 0; i < count; i++) {
+            x_max = points[i].x + radius;
+            x_min = points[i].x - radius;
+            y_max = points[i].y + radius;
+            y_min = points[i].y - radius;
+            if(x < x_max && x > x_min && y < y_max && y > y_min) {
+                printf("Returning vertex #%d\n", i);
+                return &points[i];
+            }
+        }
+        return nullptr;
+    }
+
+    shape_state add_point(int x, int y)
+    {
+        // if clicked near the start point, finish the shape
+        int radius = 10;
+        int x_max = points[0].x + radius;
+        int x_min = points[0].x - radius;
+        int y_max = points[0].y + radius;
+        int y_min = points[0].y - radius;
+        if(x < x_max && x > x_min && y < y_max && y > y_min) {
+            if(count < 3) {
+                printf("Cannot finish - need at least 3 vertices!\n");
+                return NOT_FINISHED;
+            }
+            printf("Finishing polygon\n");
+            state = FINISHED;
+        }
+        points[count++] = {
+                .x = x,
+                .y = y
+        };
+        // mark the pixel's spot with some color
+        // it will be overriden anyway when drawing the shape
+        put_pixel(x, y, 0, 0, 255);
+        UpdateTexture(canvas_texture, canvas.data);
+        if(count == max_points - 1) {
+            state = FINISHED;
+        }
+        return get_state();
+    }
+
+    shape_state get_state()
+    {
+        if(count < 3) {
+            state = NOT_FINISHED;
+        }
+        return state;
+    }
+    shape_state set_state(shape_state s)
+    {
+        state = s;
     }
 };
 

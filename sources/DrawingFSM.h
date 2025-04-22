@@ -123,6 +123,17 @@ public:
         state = DRAW;
     }
 
+    void draw_polygon()
+    {
+        if(state == DRAW) {
+            return;
+        }
+        current_shape = new Polygon();
+        shapes[count++] = current_shape;
+        printf("count: %d\n", count);
+        state = DRAW;
+    }
+
     void edit_shape()
     {
         state = EDIT;
