@@ -12,9 +12,10 @@ extern Texture2D canvas_texture;
 enum state {
     DRAW = 0,
     EDIT,
-    MOVE,
+    MOVE_PIXEL,
     IDLE,
-    DELETE
+    DELETE,
+    MOVE_SHAPE
 };
 
 class DrawingFSM {
@@ -69,11 +70,11 @@ public:
                 }
                 p = shapes[i]->get_vertex(x, y);
                 if(p != nullptr) {
-                    state = MOVE;
+                    state = MOVE_PIXEL;
                     break;
                 }
             }
-        } else if(state == MOVE) {
+        } else if(state == MOVE_PIXEL) {
             if(p == nullptr) {
                 printf("Something went wrong!\n");
                 state = IDLE;
@@ -109,6 +110,29 @@ public:
                     return;
                 }
             }
+        } else if(state == MOVE_SHAPE) {
+            if(current_shape == nullptr) {
+                // select the shape
+                for(int i = 0; i < count; i++) {
+                    if(shapes[i]->get_state() != FINISHED) {
+                        //printf("Shapes: %d, i: %d!\n", count, i);
+                        continue;
+                    }
+                    p = shapes[i]->get_vertex(x, y);
+                    if(p != nullptr) {
+                        current_shape = shapes[i];
+                        break;
+                    }
+                }
+            } else {
+                // select new location for chosen vertex
+                // all vertices will be moved by the same vector
+                int dx = x - p->x;
+                int dy = y - p->y;
+                current_shape->move_shape(dx, dy);
+                redraw_all();
+                state = IDLE;
+            }
         }
     }
 
@@ -132,6 +156,12 @@ public:
         shapes[count++] = current_shape;
         printf("count: %d\n", count);
         state = DRAW;
+    }
+
+    void move_shape()
+    {
+        current_shape = nullptr;
+        state = MOVE_SHAPE;
     }
 
     void edit_shape()

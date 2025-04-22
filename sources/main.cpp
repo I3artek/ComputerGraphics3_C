@@ -78,6 +78,7 @@ int main(void)
         if(IsKeyDown(KEY_E)) fsm->edit_shape();
         if(IsKeyDown(KEY_D)) fsm->delete_point();
         if(IsKeyDown(KEY_P)) fsm->draw_polygon();
+        if(IsKeyDown(KEY_M)) fsm->move_shape();
 
         BeginDrawing();
 

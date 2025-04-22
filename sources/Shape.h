@@ -39,6 +39,7 @@ public:
     virtual point *get_vertex(int x, int y) = 0;
     virtual shape_state get_state() = 0;
     virtual shape_state set_state(shape_state s) = 0;
+    virtual void move_shape(int dx, int dy) = 0;
 };
 
 class Line: public Shape {
@@ -191,6 +192,15 @@ public:
         }
         return nullptr;
     }
+
+    void move_shape(int dx, int dy)
+    {
+        for(int i = 0; i < count; i++)
+        {
+            points[i].x += dx;
+            points[i].y += dy;
+        }
+    }
 };
 
 class Polygon: public Shape {
@@ -305,6 +315,15 @@ public:
     shape_state set_state(shape_state s)
     {
         state = s;
+    }
+
+    void move_shape(int dx, int dy)
+    {
+        for(int i = 0; i < count; i++)
+        {
+            points[i].x += dx;
+            points[i].y += dy;
+        }
     }
 };
 
