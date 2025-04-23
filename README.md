@@ -16,8 +16,8 @@
 ## Others
 - [x] Changing color of individual shapes
 - [x] Removing all shapes
-- [ ] Anti-aliasing
+- [x] Anti-aliasing
 - [x] Saving to file
 - [x] Loading from a file
 # Remarks
-Changing color and thickness can be done 
+Changing color and thickness can be done by saving to file, editing it and then loading from it

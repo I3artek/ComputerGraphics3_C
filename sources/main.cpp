@@ -62,7 +62,7 @@ int main(void)
     canvas_texture = LoadTextureFromImage(canvas);
 
     DrawingFSM *fsm = new DrawingFSM();
-    fsm->draw_line();
+    fsm->draw_circle();
 
     while (!WindowShouldClose())
     {

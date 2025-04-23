@@ -26,6 +26,8 @@ b = tmp;           \
 #define my_modf(a) (a - floorf(a))
 #define get_color(L, B, c, s) (uint8_t)(L.c * (1 - my_modf(s)) + B.c * my_modf(s))
 
+#define get_color_circle(L, B, c) (uint8_t)(L.c * (1 - T) + B.c * T)
+
 typedef enum {
     FINISHED = 0,
     NOT_FINISHED,
@@ -562,19 +564,68 @@ private:
             .b = 0,
             .a = 255
     };
-    void draw_four_octants(int dx, int dy) {
-        put_pixel(center.x + dx, center.y + dy, color.r, color.g, color.b);
-        put_pixel(center.x + dx, center.y - dy, color.r, color.g, color.b);
-        put_pixel(center.x - dx, center.y + dy, color.r, color.g, color.b);
-        put_pixel(center.x - dx, center.y - dy, color.r, color.g, color.b);
+    void draw_four_octants(int dx, int dy, pixel c = {}) {
+        if(c.a == 0) {
+            c = color;
+        }
+        put_pixel(center.x + dx, center.y + dy, c.r, c.g, c.b);
+        put_pixel(center.x + dx, center.y - dy, c.r, c.g, c.b);
+        put_pixel(center.x - dx, center.y + dy, c.r, c.g, c.b);
+        put_pixel(center.x - dx, center.y - dy, c.r, c.g, c.b);
     }
 public:
     // a variable to indicate whether the user clicked the center or a point on the perimeter
     circle_point last_clicked = NO_POINT;
+
+    void draw_aa()
+    {
+        pixel L = color;
+        pixel B = {
+                .r = 255,
+                .g = 255,
+                .b = 255,
+                .a = 255
+        };
+        int x = radius;
+        int y = 0;
+        //put_pixel(x, y, L.r, L.g, L.b);
+        draw_four_octants(x, y);
+        draw_four_octants(y, x);
+        while(x > y)
+        {
+            y++;
+            x = ceil(sqrt(radius * radius - y * y));
+            float T = abs(x - sqrt(radius * radius - y * y));
+            printf("%f\n", T);
+            pixel c2 = {
+                    .r = get_color_circle(L, B, r),
+                    .g = get_color_circle(L, B, g),
+                    .b = get_color_circle(L, B, b),
+                    .a = 255
+            };
+            pixel c1 = {
+                    .r = get_color_circle(B, L, r),
+                    .g = get_color_circle(B, L, g),
+                    .b = get_color_circle(B, L, b),
+                    .a = 255
+            };
+            //put_pixel(center.x + x, center.y + y, c2.r, c2.g, c2.b);
+            //put_pixel(center.x + x - 1, center.y + y, c1.r, c1.g, c1.b);
+            draw_four_octants(x, y, c2);
+            draw_four_octants(x - 1, y, c1);
+            draw_four_octants(y, x, c2);
+            draw_four_octants(y, x - 1, c1);
+        }
+    }
+
     void draw()
     {
         // draw the center for easier selection
         put_pixel(center.x, center.y, color.r, color.g, color.b);
+        if(aa) {
+            draw_aa();
+            return;
+        }
         int x = 0;
         int y = radius;
         int d = 1 - radius;
