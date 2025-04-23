@@ -61,9 +61,8 @@ int main(void)
 
     canvas_texture = LoadTextureFromImage(canvas);
 
-    Line *l = new Line();
     DrawingFSM *fsm = new DrawingFSM();
-    fsm->draw_circle();
+    fsm->draw_line();
 
     while (!WindowShouldClose())
     {
@@ -84,6 +83,8 @@ int main(void)
         if(IsKeyDown(KEY_B)) fsm->clear();
         if(IsKeyDown(KEY_S)) fsm->save_to_file();
         if(IsKeyDown(KEY_F)) fsm->load_from_file();
+        if(IsKeyDown(KEY_A)) fsm->aa_on();
+        if(IsKeyDown(KEY_Q)) fsm->aa_off();
 
         BeginDrawing();
 

@@ -13,6 +13,8 @@
 
 #define USER_CLICK_ERROR 10
 
+#define DBG() printf("%s %d\n", __func__, __LINE__)
+
 #define swap(a, b) \
 do {               \
 int tmp = a;       \
@@ -20,6 +22,9 @@ a = b;             \
 b = tmp;           \
 } while(0)
 
+// modf was producing SIGSEGV for unknown reasons
+#define my_modf(a) (a - floorf(a))
+#define get_color(L, B, c, s) (uint8_t)(L.c * (1 - my_modf(s)) + B.c * my_modf(s))
 
 typedef enum {
     FINISHED = 0,
@@ -88,6 +93,8 @@ public:
     virtual shape_state set_state(shape_state s) = 0;
     virtual void move_shape(int dx, int dy) = 0;
     virtual void set_color(uint8_t r, uint8_t g, uint8_t b) = 0;
+    virtual void set_antialiasing(bool b) = 0;
+    virtual bool get_antialiasing() = 0;
     //virtual void serialize
 };
 
@@ -95,6 +102,7 @@ class Line: public Shape {
     friend std::ofstream& operator<<(std::ofstream& os, const Line *l);
     friend std::ifstream& operator>>(std::ifstream& is, Line *l);
 private:
+    bool aa = false;
     shape_state state = NOT_FINISHED;
     point points[2];
     int count = 0;
@@ -105,8 +113,75 @@ private:
             .b = 0,
             .a = 255
     };
+    void draw_horizontal_aa(int x0, int y0, int x1, int y1) {
+        pixel L = color;
+        pixel B = {
+                .r = 255,
+                .g = 255,
+                .b = 255,
+                .a = 255
+        };
+        auto y = (float)y0;
+        float m = (float)(y1 - y0) / (float)(x1 - x0);
+        double *tmp;
+        for(int x = x0; x <= x1; x++)
+        {
+            //B = *gp((int)x,(int)y);
+            pixel c1 = {
+                    .r = get_color(L, B, r, y),
+                    .g = get_color(L, B, g, y),
+                    .b = get_color(L, B, b, y),
+                    .a = 255
+            };
+            pixel c2 = {
+                    .r = get_color(B, L, r, y),
+                    .g = get_color(B, L, g, y),
+                    .b = get_color(B, L, b, y),
+                    .a = 255
+            };
+            put_pixel(x, (int)floorf(y), c1.r, c1.g, c1.b);
+            put_pixel(x, (int)floorf(y) + 1, c2.r, c2.g, c2.b);
+            y += m;
+        }
+    }
+    void draw_vertical_aa(int x0, int y0, int x1, int y1) {
+        pixel L = color;
+        pixel B = {
+                .r = 255,
+                .g = 255,
+                .b = 255,
+                .a = 255
+        };
+        auto x = (float)x0;
+        float m = (float)(x1 - x0) / (float)(y1 - y0);//dupa
+        double *tmp;
+        for(int y = y0; y <= y1; y++)
+        {
+            //B = *gp((int)x,(int)y);
+            pixel c1 = {
+                    .r = get_color(L, B, r, x),
+                    .g = get_color(L, B, g, x),
+                    .b = get_color(L, B, b, x),
+                    .a = 255
+            };
+            pixel c2 = {
+                    .r = get_color(B, L, r, x),
+                    .g = get_color(B, L, g, x),
+                    .b = get_color(B, L, b, x),
+                    .a = 255
+            };
+            put_pixel((int)floorf(x), y, c1.r, c1.g, c1.b);
+            put_pixel((int)floorf(x) + 1, y, c2.r, c2.g, c2.b);
+            x += m;
+        }
+    }
     // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
     void draw_horizontal(int x0, int y0, int x1, int y1) {
+        if(aa) {
+            draw_horizontal_aa(x0, y0, x1, y1);
+            return;
+        }
+        // x0 < x1
         int dx = x1 - x0;
         int dy = y1 - y0;
         int yi = 1;
@@ -133,6 +208,10 @@ private:
         }
     }
     void draw_vertical(int x0, int y0, int x1, int y1) {
+        if(aa) {
+            draw_vertical_aa(x0, y0, x1, y1);
+        }
+        // y0 < y1
         int dx = x1 - x0;
         int dy = y1 - y0;
         int xi = 1;
@@ -263,6 +342,13 @@ public:
             points[i].y += dy;
         }
     }
+
+    void set_antialiasing(bool b) {
+        aa = b;
+    }
+    bool get_antialiasing() {
+        return aa;
+    }
 };
 
 std::ofstream& operator<<(std::ofstream& os, const Line *l)
@@ -294,6 +380,7 @@ class Polygon: public Shape {
     friend std::ifstream& operator>>(std::ifstream& is, Polygon *l);
     friend std::ofstream& operator<<(std::ofstream& os, const Polygon *l);
 private:
+    bool aa = false;
     shape_state state = NOT_FINISHED;
     // number of points is also the number of lines
     const static int max_points = 20;
@@ -337,6 +424,7 @@ public:
             lines[i].new_vertices(p0->x, p0->y, p1->x, p1->y);
             lines[i].set_color(color.r, color.g, color.b);
             lines[i].set_width(width);
+            lines[i].set_antialiasing(aa);
         }
     }
 
@@ -426,6 +514,13 @@ public:
             points[i].y += dy;
         }
     }
+
+    void set_antialiasing(bool b) {
+        aa = b;
+    }
+    bool get_antialiasing() {
+        return aa;
+    }
 };
 
 std::ofstream& operator<<(std::ofstream& os, const Polygon *l)
@@ -457,6 +552,7 @@ class Circle: public Shape {
     friend std::ifstream &operator>>(std::ifstream &is, Circle *l);
     friend std::ofstream &operator<<(std::ofstream &os, const Circle *l);
 private:
+    bool aa = false;
     shape_state state = NOT_FINISHED;
     point center;
     int radius = -1;
@@ -557,6 +653,13 @@ public:
         color.r = r;
         color.g = g;
         color.b = b;
+    }
+
+    void set_antialiasing(bool b) {
+        aa = b;
+    }
+    bool get_antialiasing() {
+        return aa;
     }
 };
 

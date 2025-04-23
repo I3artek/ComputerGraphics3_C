@@ -22,6 +22,7 @@ enum state {
 
 class DrawingFSM {
 public:
+    bool AA = false;
     Shape *current_shape;
     // I don't have a clue why I am unable to import proper header to be able to use std::vector,
     // and honestly I don't care, this is not something that should be graded on this subject
@@ -264,6 +265,36 @@ public:
         count = 0;
         redraw_all();
     }
+
+    void toggle_aa()
+    {
+        AA = !AA;
+        for(int i = 0; i < count; i++)
+        {
+            shapes[i]->set_antialiasing(AA);
+        }
+        redraw_all();
+    }
+
+    void aa_on()
+    {
+        AA = true;
+        for(int i = 0; i < count; i++)
+        {
+            shapes[i]->set_antialiasing(AA);
+        }
+        redraw_all();
+    }
+    void aa_off()
+    {
+        AA = false;
+        for(int i = 0; i < count; i++)
+        {
+            shapes[i]->set_antialiasing(AA);
+        }
+        redraw_all();
+    }
+
 };
 
 
