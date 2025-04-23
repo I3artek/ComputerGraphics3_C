@@ -3,19 +3,21 @@
 - [x] Drawing
 - [x] Editing
 - [x] Deleting
-- [ ] Changing thickness 
+- [x] Changing thickness 
 ## Circles
-- [ ] Drawing
-- [ ] Editing
-- [ ] Deleting
+- [x] Drawing
+- [x] Editing
+- [x] Deleting
 ## Polygons
 - [x] Drawing
 - [x] Editing
 - [x] Deleting
-- [ ] Changing thickness 
+- [x] Changing thickness 
 ## Others
-- [ ] Changing color of individual shapes
+- [x] Changing color of individual shapes
 - [x] Removing all shapes
 - [ ] Anti-aliasing
-- [ ] Saving to file
-- [ ] Loading from a file
+- [x] Saving to file
+- [x] Loading from a file
+# Remarks
+Changing color and thickness can be done 

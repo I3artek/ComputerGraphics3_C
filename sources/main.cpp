@@ -6,8 +6,8 @@
 #include "Shape.h"
 #include "DrawingFSM.h"
 
-#define SCREEN_WIDTH (800)
-#define SCREEN_HEIGHT (450)
+#define SCREEN_WIDTH (CANVAS_SIZE)
+#define SCREEN_HEIGHT (CANVAS_SIZE)
 
 #define WINDOW_TITLE "Window title"
 
@@ -63,7 +63,7 @@ int main(void)
 
     Line *l = new Line();
     DrawingFSM *fsm = new DrawingFSM();
-    fsm->draw_line();
+    fsm->draw_circle();
 
     while (!WindowShouldClose())
     {
@@ -77,6 +77,7 @@ int main(void)
         // handle keyboard shortcuts
         if(IsKeyDown(KEY_L)) fsm->draw_line();
         if(IsKeyDown(KEY_P)) fsm->draw_polygon();
+        if(IsKeyDown(KEY_C)) fsm->draw_circle();
         if(IsKeyDown(KEY_E)) fsm->edit_shape();
         if(IsKeyDown(KEY_D)) fsm->delete_point();
         if(IsKeyDown(KEY_M)) fsm->move_shape();

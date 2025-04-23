@@ -8,7 +8,7 @@
 #include "raylib.h"
 #include <stdint.h>
 
-#define CANVAS_SIZE (200)
+#define CANVAS_SIZE (500)
 
 #define get_pixel(c, x, y) (&(((pixel *)(c.data))[x + CANVAS_SIZE * y]))
 #define gp(x, y) get_pixel(canvas, (x), (y))

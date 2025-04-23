@@ -45,7 +45,7 @@ public:
             }
         }
         // write count of shapes to file
-        VectorData << new_count << " ";
+        VectorData << new_count << " \n";
         // write all shapes data
         for(int i = 0; i < count; i++)
         {
@@ -54,6 +54,7 @@ public:
             }
             Line *line;
             Polygon *polygon;
+            Circle *circle;
             if(dynamic_cast<Line *>(shapes[i]) != nullptr) {
                 // line
                 line = dynamic_cast<Line *>(shapes[i]);
@@ -62,7 +63,11 @@ public:
             } else if(dynamic_cast<Polygon *>(shapes[i]) != nullptr) {
                 polygon = dynamic_cast<Polygon *>(shapes[i]);
                 VectorData << "P ";
-                VectorData << polygon;
+                VectorData << polygon << "\n";
+            } else if(dynamic_cast<Circle *>(shapes[i]) != nullptr) {
+                circle = dynamic_cast<Circle *>(shapes[i]);
+                VectorData << "C ";
+                VectorData << circle << "\n";
             }
         }
         VectorData.close();
@@ -77,6 +82,7 @@ public:
         {
             Line *line;
             Polygon *polygon;
+            Circle *circle;
             VectorData >> type;
             if(type == 'L') {
                 printf("Loading line\n");
@@ -88,6 +94,11 @@ public:
                 polygon = new Polygon();
                 VectorData >> polygon;
                 shapes[i] = polygon;
+            } else if(type == 'C') {
+                printf("Loading circle\n");
+                circle = new Circle();
+                VectorData >> circle;
+                shapes[i] = circle;
             }
         }
         VectorData.close();
@@ -200,9 +211,8 @@ public:
         }
     }
 
-    void draw_line()
-    {
-        if(state == DRAW) {
+    void draw_line() {
+        if (state == DRAW) {
             return;
         }
         current_shape = new Line();
@@ -211,9 +221,8 @@ public:
         state = DRAW;
     }
 
-    void draw_polygon()
-    {
-        if(state == DRAW) {
+    void draw_polygon() {
+        if (state == DRAW) {
             return;
         }
         current_shape = new Polygon();
@@ -221,6 +230,17 @@ public:
         printf("count: %d\n", count);
         state = DRAW;
     }
+
+    void draw_circle() {
+        if (state == DRAW) {
+            return;
+        }
+        current_shape = new Circle();
+        shapes[count++] = current_shape;
+        printf("count: %d\n", count);
+        state = DRAW;
+    }
+
 
     void move_shape()
     {

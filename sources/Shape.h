@@ -9,6 +9,9 @@
 #include "Lecture.h"
 #include <iostream>
 #include <fstream>
+#include "math.h"
+
+#define USER_CLICK_ERROR 10
 
 #define swap(a, b) \
 do {               \
@@ -22,6 +25,12 @@ typedef enum {
     FINISHED = 0,
     NOT_FINISHED,
 } shape_state;
+
+typedef enum {
+    NO_POINT = 0,
+    CENTER,
+    PERIMETER
+} circle_point;
 
 struct point {
     int x;
@@ -232,7 +241,7 @@ public:
         }
         // in proximity
         int x_max, x_min, y_max, y_min;
-        int radius = 10;
+        int radius = USER_CLICK_ERROR;
         for(int i = 0; i < count; i++) {
             x_max = points[i].x + radius;
             x_min = points[i].x - radius;
@@ -351,7 +360,7 @@ public:
         }
         // in proximity
         int x_max, x_min, y_max, y_min;
-        int radius = 10;
+        int radius = USER_CLICK_ERROR;
         for(int i = 0; i < count; i++) {
             x_max = points[i].x + radius;
             x_min = points[i].x - radius;
@@ -440,6 +449,128 @@ std::ifstream& operator>>(std::ifstream& is, Polygon *l)
     {
         is >> &l->points[i];
     }
+    l->set_state(FINISHED);
+    return is;
+}
+
+class Circle: public Shape {
+    friend std::ifstream &operator>>(std::ifstream &is, Circle *l);
+    friend std::ofstream &operator<<(std::ofstream &os, const Circle *l);
+private:
+    shape_state state = NOT_FINISHED;
+    point center;
+    int radius = -1;
+    pixel color = {
+            .r = 255,
+            .g = 0,
+            .b = 0,
+            .a = 255
+    };
+    void draw_four_octants(int dx, int dy) {
+        put_pixel(center.x + dx, center.y + dy, color.r, color.g, color.b);
+        put_pixel(center.x + dx, center.y - dy, color.r, color.g, color.b);
+        put_pixel(center.x - dx, center.y + dy, color.r, color.g, color.b);
+        put_pixel(center.x - dx, center.y - dy, color.r, color.g, color.b);
+    }
+public:
+    // a variable to indicate whether the user clicked the center or a point on the perimeter
+    circle_point last_clicked = NO_POINT;
+    void draw()
+    {
+        // draw the center for easier selection
+        put_pixel(center.x, center.y, color.r, color.g, color.b);
+        int x = 0;
+        int y = radius;
+        int d = 1 - radius;
+        draw_four_octants(x, y);
+        draw_four_octants(y, x);
+        while (y > x)
+        {
+            if(d < 0) {
+                d += 2 * x + 3;
+            } else {
+                d += 2 * x - 2 * y + 5;
+                y--;
+            }
+            x++;
+            draw_four_octants(x, y);
+            draw_four_octants(y, x);
+        }
+
+    }
+    shape_state add_point(int x, int y)
+    {
+        if(radius == -1) {
+            center.x = x;
+            center.y = y;
+            radius = 0;
+            return get_state();
+        } else {
+            int dx = x - center.x;
+            int dy = y - center.y;
+            radius = sqrt(pow(dx, 2) + pow(dy, 2));
+            state = FINISHED;
+            return get_state();
+        }
+    }
+    point *get_vertex(int x, int y)
+    {
+        // check if the center was clicked
+        if(x == center.x && y == center.y) {
+            printf("Returning center\n");
+            last_clicked = CENTER;
+            return &center;
+        }
+        int error = USER_CLICK_ERROR;
+        int x_max = center.x + error;
+        int x_min = center.x - error;
+        int y_max = center.y + error;
+        int y_min = center.y - error;
+        if(x < x_max && x > x_min && y < y_max && y > y_min) {
+            printf("Returning center\n");
+            last_clicked = CENTER;
+            return &center;
+        }
+        // you know what? screw it, the user cannot select a point on the perimeter
+
+        last_clicked = NO_POINT;
+        return nullptr;
+    }
+    shape_state get_state()
+    {
+        if(radius < 0) {
+            state = NOT_FINISHED;
+        }
+        return state;
+    }
+    shape_state set_state(shape_state s)
+    {
+        state = s;
+    }
+    void move_shape(int dx, int dy)
+    {
+        center.x += dx;
+        center.y += dy;
+    }
+    void set_color(uint8_t r, uint8_t g, uint8_t b)
+    {
+        color.r = r;
+        color.g = g;
+        color.b = b;
+    }
+};
+
+std::ofstream &operator<<(std::ofstream &os, const Circle *l) {
+    os << &l->center << " ";
+    os << &l->color << " ";
+    os << l->radius << " ";
+    return os;
+}
+
+std::ifstream &operator>>(std::ifstream &is, Circle *l) {
+    is >> &l->center;
+    is >> &l->color;
+    is >> l->radius;
     l->set_state(FINISHED);
     return is;
 }
