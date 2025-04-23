@@ -58,9 +58,11 @@ public:
                 // line
                 line = dynamic_cast<Line *>(shapes[i]);
                 VectorData << "L ";
-                VectorData << line;
-            } else if(false) {
-                return;
+                VectorData << line << "\n";
+            } else if(dynamic_cast<Polygon *>(shapes[i]) != nullptr) {
+                polygon = dynamic_cast<Polygon *>(shapes[i]);
+                VectorData << "P ";
+                VectorData << polygon;
             }
         }
         VectorData.close();
@@ -78,10 +80,14 @@ public:
             VectorData >> type;
             if(type == 'L') {
                 printf("Loading line\n");
-                // line
                 line = new Line();
                 VectorData >> line;
                 shapes[i] = line;
+            } else if(type == 'P') {
+                printf("Loading polygon\n");
+                polygon = new Polygon();
+                VectorData >> polygon;
+                shapes[i] = polygon;
             }
         }
         VectorData.close();

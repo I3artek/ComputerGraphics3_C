@@ -109,11 +109,12 @@ private:
         int y = y0;
         for(int x = x0; x <= x1; x++) {
             int r = (width - 1) / 2;
-            while (r-- > 0) {
-                put_pixel(x, y + r, 255, 0, 0);
-                put_pixel(x, y - r, 255, 0, 0);
+            while (r > 0) {
+                put_pixel(x, y + r, color.r, color.g, color.b);
+                put_pixel(x, y - r, color.r, color.g, color.b);
+                r--;
             }
-            put_pixel(x, y, 255, 0, 0);
+            put_pixel(x, y, color.r, color.g, color.b);
             if(D > 0) {
                 y = y + yi;
                 D = D + (2 * (dy - dx));
@@ -134,11 +135,12 @@ private:
         int x = x0;
         for(int y = y0; y <= y1; y++) {
             int r = (width - 1) / 2;
-            while (r-- > 0) {
-                put_pixel(x + r, y, 255, 0, 0);
-                put_pixel(x - r, y, 255, 0, 0);
+            while (r > 0) {
+                put_pixel(x + r, y, color.r, color.g, color.b);
+                put_pixel(x - r, y, color.r, color.g, color.b);
+                r--;
             }
-            put_pixel(x, y, 255, 0, 0);
+            put_pixel(x, y, color.r, color.g, color.b);
             if(D > 0) {
                 x = x + xi;
                 D = D + (2 * (dx - dy));
@@ -280,6 +282,8 @@ std::ifstream& operator>>(std::ifstream& is, Line *l)
 }
 
 class Polygon: public Shape {
+    friend std::ifstream& operator>>(std::ifstream& is, Polygon *l);
+    friend std::ofstream& operator<<(std::ofstream& os, const Polygon *l);
 private:
     shape_state state = NOT_FINISHED;
     // number of points is also the number of lines
@@ -317,7 +321,7 @@ public:
         }
         point *p0;
         point *p1;
-        for(int i = 0; i < count - 1; i++)
+        for(int i = 0; i < count; i++)
         {
             p0 = &points[i];
             p1 = &points[(i + 1) % count];
@@ -376,6 +380,7 @@ public:
             }
             printf("Finishing polygon\n");
             state = FINISHED;
+            return get_state();
         }
         points[count++] = {
                 .x = x,
@@ -413,6 +418,31 @@ public:
         }
     }
 };
+
+std::ofstream& operator<<(std::ofstream& os, const Polygon *l)
+{
+    os << l->width << " ";
+    os << &l->color << " ";
+    os << l->count << " ";
+    for(int i = 0; i < l->count; i++)
+    {
+        os << &l->points[i] << " ";
+    }
+    return os;
+}
+std::ifstream& operator>>(std::ifstream& is, Polygon *l)
+{
+    is >> l->width;
+    is >> &l->color;
+    is >> l->count;
+    printf("Loaded count: %d\n", l->count);
+    for(int i = 0; i < l->count; i++)
+    {
+        is >> &l->points[i];
+    }
+    l->set_state(FINISHED);
+    return is;
+}
 
 
 #endif //MY_RAYLIB_GAME_SHAPE_H
