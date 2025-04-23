@@ -29,6 +29,7 @@ int main(void)
     printf("C - draw a circle\n");
     printf("E - move a point\n");
     printf("D - delete a shape containing chosen point\n");
+    printf("M - move a shape\n");
 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
     SetTargetFPS(60);
@@ -41,7 +42,7 @@ int main(void)
         return -1;
     }
     // fill the pixels
-    printf("Fill the pixels - each %d\n", sizeof(pixel));
+    //printf("Fill the pixels - each %d\n", sizeof(pixel));
     pixel *p;
     for(int i = 0; i < CANVAS_SIZE; i++)
     {
@@ -75,10 +76,13 @@ int main(void)
 
         // handle keyboard shortcuts
         if(IsKeyDown(KEY_L)) fsm->draw_line();
+        if(IsKeyDown(KEY_P)) fsm->draw_polygon();
         if(IsKeyDown(KEY_E)) fsm->edit_shape();
         if(IsKeyDown(KEY_D)) fsm->delete_point();
-        if(IsKeyDown(KEY_P)) fsm->draw_polygon();
         if(IsKeyDown(KEY_M)) fsm->move_shape();
+        if(IsKeyDown(KEY_B)) fsm->clear();
+        if(IsKeyDown(KEY_S)) fsm->save_to_file();
+        if(IsKeyDown(KEY_F)) fsm->load_from_file();
 
         BeginDrawing();
 

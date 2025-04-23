@@ -5,6 +5,11 @@
 #ifndef MY_RAYLIB_GAME_SHAPE_H
 #define MY_RAYLIB_GAME_SHAPE_H
 
+#include "Canvas.h"
+#include "Lecture.h"
+#include <iostream>
+#include <fstream>
+
 #define swap(a, b) \
 do {               \
 int tmp = a;       \
@@ -18,14 +23,47 @@ typedef enum {
     NOT_FINISHED,
 } shape_state;
 
-#include "Canvas.h"
-#include "Lecture.h"
-
 struct point {
     int x;
     int y;
 };
 typedef struct point point;
+
+std::ifstream& operator>>(std::ifstream& is, point *p)
+{
+    is >> p->x;
+    is >> p->y;
+    return is;
+}
+
+std::ofstream& operator<<(std::ofstream& os, const point *p)
+{
+    os << p->x << " ";
+    os << p->y << " ";
+    return os;
+}
+
+std::ifstream& operator>>(std::ifstream& is, pixel *p)
+{
+    // need a variable of type int for reading
+    // otherwise this does not work
+    int tmp;
+    is >> tmp;
+    p->r = tmp;
+    is >> tmp;
+    p->g = tmp;
+    is >> tmp;
+    p->b = tmp;
+    return is;
+}
+
+std::ofstream& operator<<(std::ofstream& os, const pixel *p)
+{
+    os << (int)p->r << " ";
+    os << (int)p->g << " ";
+    os << (int)p->b << " ";
+    return os;
+}
 
 extern Texture2D canvas_texture;
 
@@ -40,14 +78,24 @@ public:
     virtual shape_state get_state() = 0;
     virtual shape_state set_state(shape_state s) = 0;
     virtual void move_shape(int dx, int dy) = 0;
+    virtual void set_color(uint8_t r, uint8_t g, uint8_t b) = 0;
+    //virtual void serialize
 };
 
 class Line: public Shape {
+    friend std::ofstream& operator<<(std::ofstream& os, const Line *l);
+    friend std::ifstream& operator>>(std::ifstream& is, Line *l);
 private:
     shape_state state = NOT_FINISHED;
     point points[2];
     int count = 0;
     int width = 1;
+    pixel color = {
+            .r = 255,
+            .g = 0,
+            .b = 0,
+            .a = 255
+    };
     // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
     void draw_horizontal(int x0, int y0, int x1, int y1) {
         int dx = x1 - x0;
@@ -109,7 +157,9 @@ public:
 
     void set_color(uint8_t r, uint8_t g, uint8_t b)
     {
-        return;
+        color.r = r;
+        color.g = g;
+        color.b = b;
     }
 
     void new_vertices(int x0, int y0, int x1, int y1)
@@ -166,6 +216,7 @@ public:
     shape_state set_state(shape_state s)
     {
         state = s;
+        return state;
     }
 
     point *get_vertex(int x, int y) {
@@ -203,6 +254,31 @@ public:
     }
 };
 
+std::ofstream& operator<<(std::ofstream& os, const Line *l)
+{
+    os << l->width << " ";
+    os << &l->color << " ";
+    os << l->count << " ";
+    for(int i = 0; i < l->count; i++)
+    {
+        os << &l->points[i] << " ";
+    }
+    return os;
+}
+std::ifstream& operator>>(std::ifstream& is, Line *l)
+{
+    is >> l->width;
+    is >> &l->color;
+    is >> l->count;
+    printf("Loaded count: %d\n", l->count);
+    for(int i = 0; i < l->count; i++)
+    {
+        is >> &l->points[i];
+    }
+    l->set_state(FINISHED);
+    return is;
+}
+
 class Polygon: public Shape {
 private:
     shape_state state = NOT_FINISHED;
@@ -212,6 +288,12 @@ private:
     int count = 0;
     int width = 1;
     Line lines[max_points];
+    pixel color = {
+            .r = 255,
+            .g = 0,
+            .b = 0,
+            .a = 255
+    };
 public:
     void set_width(int w)
     {
@@ -223,7 +305,9 @@ public:
 
     void set_color(uint8_t r, uint8_t g, uint8_t b)
     {
-        return;
+        color.r = r;
+        color.g = g;
+        color.b = b;
     }
 
     void regenerate_lines()
@@ -238,6 +322,8 @@ public:
             p0 = &points[i];
             p1 = &points[(i + 1) % count];
             lines[i].new_vertices(p0->x, p0->y, p1->x, p1->y);
+            lines[i].set_color(color.r, color.g, color.b);
+            lines[i].set_width(width);
         }
     }
 
@@ -315,6 +401,7 @@ public:
     shape_state set_state(shape_state s)
     {
         state = s;
+        return state;
     }
 
     void move_shape(int dx, int dy)

@@ -6,6 +6,8 @@
 #define MY_RAYLIB_GAME_DRAWINGFSM_H
 
 #include "Shape.h"
+#include <iostream>
+#include <fstream>
 
 extern Texture2D canvas_texture;
 
@@ -29,6 +31,62 @@ public:
     //int p_idx = 0;
     enum state state = IDLE;
     point *p = nullptr;
+
+    void save_to_file()
+    {
+        std::ofstream VectorData("save.txt");
+        // we save only FINISHED shapes
+        // need to count them first
+        int new_count = 0;
+        for(int i = 0; i < count; i++)
+        {
+            if(shapes[i]->get_state() == FINISHED) {
+                new_count++;
+            }
+        }
+        // write count of shapes to file
+        VectorData << new_count << " ";
+        // write all shapes data
+        for(int i = 0; i < count; i++)
+        {
+            if(shapes[i]->get_state() != FINISHED) {
+                continue;
+            }
+            Line *line;
+            Polygon *polygon;
+            if(dynamic_cast<Line *>(shapes[i]) != nullptr) {
+                // line
+                line = dynamic_cast<Line *>(shapes[i]);
+                VectorData << "L ";
+                VectorData << line;
+            } else if(false) {
+                return;
+            }
+        }
+        VectorData.close();
+    }
+
+    void load_from_file()
+    {
+        std::ifstream VectorData("save.txt");
+        VectorData >> count;
+        char type;
+        for(int i = 0; i < count; i++)
+        {
+            Line *line;
+            Polygon *polygon;
+            VectorData >> type;
+            if(type == 'L') {
+                printf("Loading line\n");
+                // line
+                line = new Line();
+                VectorData >> line;
+                shapes[i] = line;
+            }
+        }
+        VectorData.close();
+        redraw_all();
+    }
 
     void redraw_all()
     {
@@ -172,6 +230,13 @@ public:
     void delete_point()
     {
         state = DELETE;
+    }
+
+    void clear()
+    {
+        // not cleaning garbage - I am fully aware of that
+        count = 0;
+        redraw_all();
     }
 };
 
