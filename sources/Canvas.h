@@ -26,16 +26,17 @@ do {                                                               \
     }                                                              \
 } while(0)
 
-
-typedef union pixel_u {
-    uint32_t data;
-    struct {
-        uint8_t r;
-        uint8_t g;
-        uint8_t b;
-        uint8_t a;
-    };
-} pixel;
+// Raylib's struct Color is the same structure
+//typedef union pixel_u {
+//    uint32_t data;
+//    struct {
+//        uint8_t r;
+//        uint8_t g;
+//        uint8_t b;
+//        uint8_t a;
+//    };
+//} pixel;
+typedef Color pixel;
 
 extern Image canvas;
 

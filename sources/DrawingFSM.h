@@ -19,6 +19,14 @@ enum state {
     DELETE,
     MOVE_SHAPE
 };
+const char* states[] = {
+        "DRAWING - SELECT NEW VERTEX",
+        "EDITING - SELECT VERTEX TO MOVE",
+        "MOVING - SELECT NEW VERTEX POSITION",
+        "IDLE - CHOOSE ACTION BELOW",
+        "DELETING - SELECT A SHAPE TO DELETE",
+        "MOVING - SELECT AND MOVE A SHAPE"
+};
 
 class DrawingFSM {
 public:
@@ -32,6 +40,9 @@ public:
     //int p_idx = 0;
     enum state state = IDLE;
     point *p = nullptr;
+    Color current_color = {255, 70, 30, 255};
+    int current_width = 1;
+    char width_text[18] = "Current width: 01";
 
     void save_to_file()
     {
@@ -135,7 +146,7 @@ public:
         int x = (int)pos.x;
         int y = (int)pos.y;
         printf("x: %d, y: %d\n", x, y);
-        if(x >= CANVAS_SIZE || y >= CANVAS_SIZE) {
+        if(x >= CANVAS_SIZE || y >= CANVAS_SIZE || x < 0 || y < 0) {
             return;
         }
         if(state == EDIT) {
@@ -218,7 +229,9 @@ public:
         }
         current_shape = new Line();
         shapes[count++] = current_shape;
-        printf("count: %d\n", count);
+        current_shape->set_color(current_color.r, current_color.g, current_color.b);
+        current_shape->set_width(current_width);
+        //printf("count: %d\n", count);
         state = DRAW;
     }
 
@@ -228,7 +241,9 @@ public:
         }
         current_shape = new Polygon();
         shapes[count++] = current_shape;
-        printf("count: %d\n", count);
+        current_shape->set_color(current_color.r, current_color.g, current_color.b);
+        current_shape->set_width(current_width);
+        //printf("count: %d\n", count);
         state = DRAW;
     }
 
@@ -238,7 +253,9 @@ public:
         }
         current_shape = new Circle();
         shapes[count++] = current_shape;
-        printf("count: %d\n", count);
+        current_shape->set_color(current_color.r, current_color.g, current_color.b);
+        current_shape->set_width(current_width);
+        //printf("count: %d\n", count);
         state = DRAW;
     }
 
@@ -293,6 +310,18 @@ public:
             shapes[i]->set_antialiasing(AA);
         }
         redraw_all();
+    }
+
+    void change_width(bool more)
+    {
+        const int max_width = 9;
+        if(more && current_width < max_width) {
+            current_width += 2;
+            snprintf(width_text, 18, "Current width: %d", current_width);
+        } else if(!more && current_width > 1) {
+            current_width -= 2;
+            snprintf(width_text, 18, "Current width: %d", current_width);
+        }
     }
 
 };

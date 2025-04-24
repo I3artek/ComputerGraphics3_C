@@ -6,7 +6,10 @@
 #include "Shape.h"
 #include "DrawingFSM.h"
 
-#define SCREEN_WIDTH (CANVAS_SIZE)
+#define RIGHT_BAR_WIDTH (400)
+#define RIGHT_BAR (CANVAS_SIZE + 20)
+
+#define SCREEN_WIDTH (CANVAS_SIZE + RIGHT_BAR_WIDTH)
 #define SCREEN_HEIGHT (CANVAS_SIZE)
 
 #define WINDOW_TITLE "Window title"
@@ -20,6 +23,19 @@ Image canvas = {
 };
 
 Texture2D canvas_texture;
+char mouse_pos_text[29];
+
+typedef enum {
+    GUI_IDLE = 0,
+    GUI_CHOOSE_RED,
+    GUI_CHOOSE_GREEN,
+    GUI_CHOOSE_BLUE
+} gui_state;
+
+int last_key = KEY_NULL;
+bool WasKeyDown(KeyboardKey k) {
+    return  last_key == k;
+}
 
 int main(void)
 {
@@ -58,43 +74,137 @@ int main(void)
         }
     }
 
+    // do some other GUI preparations
+    // https://www.raylib.com/examples.html
+    const int color_recs_y = 120;
+    Rectangle colorsRecs[4] = {
+        {
+            .x = CANVAS_SIZE + 20,
+            .y = color_recs_y,
+            .width = 70,
+            .height = 70
+        },
+        {
+            .x = CANVAS_SIZE + 110,
+            .y = color_recs_y,
+            .width = 70,
+            .height = 70
+        },
+        {
+            .x = CANVAS_SIZE + 200,
+            .y = color_recs_y,
+            .width = 70,
+            .height = 70
+        },
+        {
+            .x = CANVAS_SIZE + 290,
+            .y = color_recs_y,
+            .width = 70,
+            .height = 70
+        }
+    };
+
+    gui_state gs = GUI_IDLE;
 
     canvas_texture = LoadTextureFromImage(canvas);
 
     DrawingFSM *fsm = new DrawingFSM();
     fsm->draw_circle();
+    Vector2 mouse_pos = GetMousePosition();
+
+    int frame_count = 0;
 
     while (!WindowShouldClose())
     {
-        if(IsMouseButtonDown(MOUSE_BUTTON_LEFT))
-        {
-            Vector2 pos = GetMousePosition();
-            fsm->handle_click(pos);
+        frame_count++;
+        mouse_pos = GetMousePosition();
+        int x = (int)mouse_pos.x;
+        int y = (int)mouse_pos.y;
+
+        // handle mouse movement
+        if(gs == GUI_CHOOSE_RED) {
+            fsm->current_color.r = ((float)y / CANVAS_SIZE) * 255;
+            if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) gs = GUI_IDLE;
+        } else if(gs == GUI_CHOOSE_GREEN) {
+            fsm->current_color.g = ((float)y / CANVAS_SIZE) * 255;
+            if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) gs = GUI_IDLE;
+        }else if (gs == GUI_CHOOSE_BLUE) {
+            fsm->current_color.b = ((float)y / CANVAS_SIZE) * 255;
+            if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) gs = GUI_IDLE;
+        }
+
+        // handle mouse clicks
+        if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+            if (x <= CANVAS_SIZE && y <= CANVAS_SIZE && x > 0 && y > 0) {
+                // click inside canvas
+                fsm->handle_click(mouse_pos);
+            } else {
+                // click on some gui
+                if (CheckCollisionPointRec(mouse_pos, colorsRecs[0])) {
+                    gs = GUI_CHOOSE_RED;
+                } else if (CheckCollisionPointRec(mouse_pos, colorsRecs[1])) {
+                    gs = GUI_CHOOSE_GREEN;
+                } else if (CheckCollisionPointRec(mouse_pos, colorsRecs[2])) {
+                    gs = GUI_CHOOSE_BLUE;
+                }
+            }
             //printf("x: %f, y: %f\n", pos.x, pos.y);
         }
 
+        // for some reason GetKeyPressed always returns 0
+        // so I need to do this manually
+        if(IsKeyDown(KEY_L)) last_key = KEY_L;
+        if(IsKeyDown(KEY_P)) last_key = KEY_P;
+        if(IsKeyDown(KEY_C)) last_key = KEY_C;
+        if(IsKeyDown(KEY_E)) last_key = KEY_E;
+        if(IsKeyDown(KEY_D)) last_key = KEY_D;
+        if(IsKeyDown(KEY_M)) last_key = KEY_M;
+        if(IsKeyDown(KEY_B)) last_key = KEY_B;
+        if(IsKeyDown(KEY_S)) last_key = KEY_S;
+        if(IsKeyDown(KEY_F)) last_key = KEY_F;
+        if(IsKeyDown(KEY_A)) last_key = KEY_A;
+        if(IsKeyDown(KEY_Q)) last_key = KEY_Q;
+        if(IsKeyDown(KEY_EQUAL)) last_key = KEY_EQUAL;
+        if(IsKeyDown(KEY_MINUS)) last_key = KEY_MINUS;
         // handle keyboard shortcuts
-        if(IsKeyDown(KEY_L)) fsm->draw_line();
-        if(IsKeyDown(KEY_P)) fsm->draw_polygon();
-        if(IsKeyDown(KEY_C)) fsm->draw_circle();
-        if(IsKeyDown(KEY_E)) fsm->edit_shape();
-        if(IsKeyDown(KEY_D)) fsm->delete_point();
-        if(IsKeyDown(KEY_M)) fsm->move_shape();
-        if(IsKeyDown(KEY_B)) fsm->clear();
-        if(IsKeyDown(KEY_S)) fsm->save_to_file();
-        if(IsKeyDown(KEY_F)) fsm->load_from_file();
-        if(IsKeyDown(KEY_A)) fsm->aa_on();
-        if(IsKeyDown(KEY_Q)) fsm->aa_off();
+        // once every second
+        if(frame_count >= 60) {
+            if(WasKeyDown(KEY_L)) fsm->draw_line();
+            if(WasKeyDown(KEY_P)) fsm->draw_polygon();
+            if(WasKeyDown(KEY_C)) fsm->draw_circle();
+            if(WasKeyDown(KEY_E)) fsm->edit_shape();
+            if(WasKeyDown(KEY_D)) fsm->delete_point();
+            if(WasKeyDown(KEY_M)) fsm->move_shape();
+            if(WasKeyDown(KEY_B)) fsm->clear();
+            if(WasKeyDown(KEY_S)) fsm->save_to_file();
+            if(WasKeyDown(KEY_F)) fsm->load_from_file();
+            if(WasKeyDown(KEY_A)) fsm->aa_on();
+            if(WasKeyDown(KEY_Q)) fsm->aa_off();
+            if(WasKeyDown(KEY_EQUAL)) fsm->change_width(true);
+            if(WasKeyDown(KEY_MINUS)) fsm->change_width(false);
+            frame_count = 0;
+            last_key = KEY_NULL;
+        }
 
         BeginDrawing();
 
         ClearBackground(BLACK);
-
+        // draw the canvas
         DrawTexture(canvas_texture, 0, 0, WHITE);
-
-//        const char* text = "OMG! IT WORKS!";
-//        const Vector2 text_size = MeasureTextEx(GetFontDefault(), text, 20, 1);
-//        DrawText(text, SCREEN_WIDTH / 2 - text_size.x / 2, texture_y + texture.height + text_size.y + 10, 20, BLACK);
+        // draw the gui
+        DrawText(states[fsm->state], RIGHT_BAR, 20, 20, GRAY);
+        snprintf(mouse_pos_text, 29, "Mouse position: [%d, %d]", (int)mouse_pos.x, (int)mouse_pos.y);
+        DrawText(mouse_pos_text, RIGHT_BAR, 50, 20, GRAY);
+        DrawText(fsm->width_text, RIGHT_BAR, 80, 20, GRAY);
+        // color selection
+        DrawRectangleRec(colorsRecs[0], { fsm->current_color.r, 0, 0, 255});
+        DrawRectangleLinesEx(colorsRecs[0], 2, WHITE);
+        DrawRectangleRec(colorsRecs[1], { 0, fsm->current_color.g, 0, 255});
+        DrawRectangleLinesEx(colorsRecs[1], 2, WHITE);
+        DrawRectangleRec(colorsRecs[2], { 0, 0, fsm->current_color.b, 255});
+        DrawRectangleLinesEx(colorsRecs[2], 2, WHITE);
+        DrawRectangleRec(colorsRecs[3], fsm->current_color);
+        DrawRectangleLinesEx(colorsRecs[3], 2, WHITE);
 
         EndDrawing();
     }

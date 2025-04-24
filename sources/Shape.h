@@ -95,6 +95,7 @@ public:
     virtual shape_state set_state(shape_state s) = 0;
     virtual void move_shape(int dx, int dy) = 0;
     virtual void set_color(uint8_t r, uint8_t g, uint8_t b) = 0;
+    virtual void set_width(int w) = 0;
     virtual void set_antialiasing(bool b) = 0;
     virtual bool get_antialiasing() = 0;
     //virtual void serialize
@@ -212,6 +213,7 @@ private:
     void draw_vertical(int x0, int y0, int x1, int y1) {
         if(aa) {
             draw_vertical_aa(x0, y0, x1, y1);
+            return;
         }
         // y0 < y1
         int dx = x1 - x0;
@@ -576,6 +578,11 @@ private:
 public:
     // a variable to indicate whether the user clicked the center or a point on the perimeter
     circle_point last_clicked = NO_POINT;
+
+    void set_width(int w)
+    {
+        return;
+    }
 
     void draw_aa()
     {
