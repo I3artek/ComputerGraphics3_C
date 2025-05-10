@@ -5,6 +5,7 @@
 #include "Canvas.h"
 #include "Shape.h"
 #include "DrawingFSM.h"
+#include "Bezier.h"
 
 #define RIGHT_BAR_WIDTH (400)
 #define RIGHT_BAR (CANVAS_SIZE + 20)
@@ -13,6 +14,8 @@
 #define SCREEN_HEIGHT (CANVAS_SIZE)
 
 #define WINDOW_TITLE "Window title"
+
+#define BEZIER false
 
 Image canvas = {
         .data = nullptr,
@@ -76,7 +79,7 @@ int main(void)
 
     // do some other GUI preparations
     // https://www.raylib.com/examples.html
-    const int color_recs_y = 120;
+    const int color_recs_y = 140;
     Rectangle colorsRecs[4] = {
         {
             .x = CANVAS_SIZE + 20,
@@ -109,8 +112,15 @@ int main(void)
     canvas_texture = LoadTextureFromImage(canvas);
 
     DrawingFSM *fsm = new DrawingFSM();
-    fsm->draw_circle();
+    //fsm->draw_circle();
     Vector2 mouse_pos = GetMousePosition();
+
+    Vector2 bezier_points[MAX_POINTS];
+    int bezier_count;
+    int max_bezier = 3;
+
+    char bezier_text[19];
+    snprintf(bezier_text, 19, "Bezier points: %d", max_bezier);
 
     int frame_count = 0;
 
@@ -137,7 +147,17 @@ int main(void)
         if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
             if (x <= CANVAS_SIZE && y <= CANVAS_SIZE && x > 0 && y > 0) {
                 // click inside canvas
-                fsm->handle_click(mouse_pos);
+                if(BEZIER) {
+                    bezier_points[bezier_count++] = mouse_pos;
+                    printf("Adding point [%d, %d]\n", x, y);
+                    if(bezier_count == max_bezier) {
+                        draw_bezier_curve(bezier_points, bezier_count);
+                        UpdateTexture(canvas_texture, canvas.data);
+                        bezier_count = 0;
+                    }
+                } else {
+                    fsm->handle_click(mouse_pos);
+                }
             } else {
                 // click on some gui
                 if (CheckCollisionPointRec(mouse_pos, colorsRecs[0])) {
@@ -166,6 +186,8 @@ int main(void)
         if(IsKeyDown(KEY_Q)) last_key = KEY_Q;
         if(IsKeyDown(KEY_EQUAL)) last_key = KEY_EQUAL;
         if(IsKeyDown(KEY_MINUS)) last_key = KEY_MINUS;
+        if(IsKeyDown(KEY_LEFT_BRACKET)) last_key = KEY_LEFT_BRACKET;
+        if(IsKeyDown(KEY_RIGHT_BRACKET)) last_key = KEY_RIGHT_BRACKET;
         // handle keyboard shortcuts
         // once every second
         if(frame_count >= 60) {
@@ -182,6 +204,14 @@ int main(void)
             if(WasKeyDown(KEY_Q)) fsm->aa_off();
             if(WasKeyDown(KEY_EQUAL)) fsm->change_width(true);
             if(WasKeyDown(KEY_MINUS)) fsm->change_width(false);
+            if(WasKeyDown(KEY_RIGHT_BRACKET) && max_bezier < MAX_POINTS) {
+                max_bezier++;
+                snprintf(bezier_text, 19, "Bezier points: %d", max_bezier);
+            }
+            if(WasKeyDown(KEY_LEFT_BRACKET) && max_bezier > 1) {
+                max_bezier--;
+                snprintf(bezier_text, 19, "Bezier points: %d", max_bezier);
+            }
             frame_count = 0;
             last_key = KEY_NULL;
         }
@@ -196,6 +226,7 @@ int main(void)
         snprintf(mouse_pos_text, 29, "Mouse position: [%d, %d]", (int)mouse_pos.x, (int)mouse_pos.y);
         DrawText(mouse_pos_text, RIGHT_BAR, 50, 20, GRAY);
         DrawText(fsm->width_text, RIGHT_BAR, 80, 20, GRAY);
+        DrawText(bezier_text, RIGHT_BAR, 110, 20, GRAY);
         // color selection
         DrawRectangleRec(colorsRecs[0], { fsm->current_color.r, 0, 0, 255});
         DrawRectangleLinesEx(colorsRecs[0], 2, WHITE);

@@ -43,6 +43,7 @@ public:
     Color current_color = {255, 70, 30, 255};
     int current_width = 1;
     char width_text[18] = "Current width: 01";
+    bool resizing_circle = false;
 
     void save_to_file()
     {
@@ -158,6 +159,9 @@ public:
                 p = shapes[i]->get_vertex(x, y);
                 if(p != nullptr) {
                     state = MOVE_PIXEL;
+                    if(dynamic_cast<Circle *>(shapes[i]) != nullptr) {
+                        resizing_circle = true;
+                    }
                     break;
                 }
             }
@@ -165,7 +169,11 @@ public:
             if(p == nullptr) {
                 printf("Something went wrong!\n");
                 state = IDLE;
+                resizing_circle = false;
                 return;
+            }
+            if(resizing_circle) {
+                resizing_circle = false;
             }
             p->x = x;
             p->y = y;

@@ -7,6 +7,7 @@
 ## Circles
 - [x] Drawing
 - [x] Editing
+- [ ] Changing radius
 - [x] Deleting
 ## Polygons
 - [x] Drawing

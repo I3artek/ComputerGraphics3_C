@@ -603,6 +603,7 @@ public:
             y++;
             x = ceil(sqrt(radius * radius - y * y));
             float T = abs(x - sqrt(radius * radius - y * y));
+            // D(R,y) = ceil(sqrt(radius * radius - y * y)) - sqrt(radius * radius - y * y)
             printf("%f\n", T);
             pixel c2 = {
                     .r = get_color_circle(L, B, r),
