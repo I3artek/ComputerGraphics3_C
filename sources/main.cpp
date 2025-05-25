@@ -171,6 +171,9 @@ int main(void)
             //printf("x: %f, y: %f\n", pos.x, pos.y);
         }
 
+        //scale
+        if(IsKeyDown(KEY_KP_1)) fsm->scale = 1;
+        if(IsKeyDown(KEY_KP_2)) fsm->scale = 2;
         // for some reason GetKeyPressed always returns 0
         // so I need to do this manually
         if(IsKeyDown(KEY_L)) last_key = KEY_L;
@@ -184,6 +187,8 @@ int main(void)
         if(IsKeyDown(KEY_F)) last_key = KEY_F;
         if(IsKeyDown(KEY_A)) last_key = KEY_A;
         if(IsKeyDown(KEY_Q)) last_key = KEY_Q;
+        if(IsKeyDown(KEY_SLASH)) last_key = KEY_SLASH;
+        if(IsKeyDown(KEY_BACKSLASH)) last_key = KEY_BACKSLASH;
         if(IsKeyDown(KEY_EQUAL)) last_key = KEY_EQUAL;
         if(IsKeyDown(KEY_MINUS)) last_key = KEY_MINUS;
         if(IsKeyDown(KEY_LEFT_BRACKET)) last_key = KEY_LEFT_BRACKET;
@@ -202,6 +207,8 @@ int main(void)
             if(WasKeyDown(KEY_F)) fsm->load_from_file();
             if(WasKeyDown(KEY_A)) fsm->aa_on();
             if(WasKeyDown(KEY_Q)) fsm->aa_off();
+            if(WasKeyDown(KEY_SLASH)) fsm->resize_poly();
+            if(WasKeyDown(KEY_BACKSLASH)) fsm->rotate_poly();
             if(WasKeyDown(KEY_EQUAL)) fsm->change_width(true);
             if(WasKeyDown(KEY_MINUS)) fsm->change_width(false);
             if(WasKeyDown(KEY_RIGHT_BRACKET) && max_bezier < MAX_POINTS) {

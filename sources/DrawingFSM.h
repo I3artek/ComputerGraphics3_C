@@ -17,7 +17,9 @@ enum state {
     MOVE_PIXEL,
     IDLE,
     DELETE,
-    MOVE_SHAPE
+    MOVE_SHAPE,
+    RESIZE_POLY,
+    ROTATE_POLY
 };
 const char* states[] = {
         "DRAWING - SELECT NEW VERTEX",
@@ -25,7 +27,9 @@ const char* states[] = {
         "MOVING - SELECT NEW VERTEX POSITION",
         "IDLE - CHOOSE ACTION BELOW",
         "DELETING - SELECT A SHAPE TO DELETE",
-        "MOVING - SELECT AND MOVE A SHAPE"
+        "MOVING - SELECT AND MOVE A SHAPE",
+        "Resizing Polygon",
+        "rotating polygon"
 };
 
 class DrawingFSM {
@@ -44,6 +48,10 @@ public:
     int current_width = 1;
     char width_text[18] = "Current width: 01";
     bool resizing_circle = false;
+    point chosen_point = { .x = 0, .y = 0};
+    bool has_point = false;
+    float scale = 0.5;
+    int angle = 0;
 
     void save_to_file()
     {
@@ -59,6 +67,8 @@ public:
         }
         // write count of shapes to file
         VectorData << new_count << " \n";
+        VectorData << scale << "\n";
+        VectorData << angle << "\n";
         // write all shapes data
         for(int i = 0; i < count; i++)
         {
@@ -90,6 +100,8 @@ public:
     {
         std::ifstream VectorData("save.txt");
         VectorData >> count;
+        VectorData >> scale;
+        VectorData >> angle;
         char type;
         for(int i = 0; i < count; i++)
         {
@@ -228,6 +240,64 @@ public:
                 redraw_all();
                 state = IDLE;
             }
+        } else if(state == RESIZE_POLY) {
+            if(current_shape == nullptr) {
+                // select the shape
+                for(int i = 0; i < count; i++) {
+                    if(shapes[i]->get_state() != FINISHED) {
+                        //printf("Shapes: %d, i: %d!\n", count, i);
+                        continue;
+                    }
+                    p = shapes[i]->get_vertex(x, y);
+                    if(p != nullptr) {
+                        current_shape = shapes[i];
+                        break;
+                    }
+                }
+            } else {
+                // select point
+                chosen_point.x = x;
+                chosen_point.y = y;
+                Polygon *polygon;
+                if(dynamic_cast<Polygon *>(current_shape) != nullptr) {
+                    polygon = dynamic_cast<Polygon *>(current_shape);
+                    polygon->resize(scale, &chosen_point);
+                }
+                redraw_all();
+                has_point = true;
+                state = IDLE;
+                has_point = false;
+                current_shape = nullptr;
+            }
+        } else if(state == ROTATE_POLY) {
+            if(current_shape == nullptr) {
+                // select the shape
+                for(int i = 0; i < count; i++) {
+                    if(shapes[i]->get_state() != FINISHED) {
+                        //printf("Shapes: %d, i: %d!\n", count, i);
+                        continue;
+                    }
+                    p = shapes[i]->get_vertex(x, y);
+                    if(p != nullptr) {
+                        current_shape = shapes[i];
+                        break;
+                    }
+                }
+            } else {
+                // select point
+                chosen_point.x = x;
+                chosen_point.y = y;
+                Polygon *polygon;
+                if(dynamic_cast<Polygon *>(current_shape) != nullptr) {
+                    polygon = dynamic_cast<Polygon *>(current_shape);
+                    polygon->rotate(angle, &chosen_point);
+                }
+                redraw_all();
+                has_point = true;
+                state = IDLE;
+                has_point = false;
+                current_shape = nullptr;
+            }
         }
     }
 
@@ -282,6 +352,16 @@ public:
     void delete_point()
     {
         state = DELETE;
+    }
+
+    void resize_poly()
+    {
+        state = RESIZE_POLY;
+    }
+
+    void rotate_poly()
+    {
+        state = ROTATE_POLY;
     }
 
     void clear()

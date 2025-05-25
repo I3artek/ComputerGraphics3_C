@@ -399,6 +399,42 @@ private:
             .a = 255
     };
 public:
+
+    void resize(float scale, point *p)
+    {
+        int dx, dy;
+        for(int i = 0; i < count; i++)
+        {
+            printf("dupa, x: %d, y: %d\n", points[i].x, points[i].y);
+            dx = points[i].x - p->x;
+            dy = points[i].y - p->y;
+            printf("dupb, dx: %d, dy: %d\n", dx, dy);
+            if(scale >= 1 || scale <= 0) {
+                points[i].x += (scale - 1) * dx;
+                points[i].y += (scale - 1) * dy;
+            } else {
+                points[i].x -= (scale) * dx;
+                points[i].y -= (scale) * dy;
+            }
+
+            printf("dupc, x: %d, y: %d\n", points[i].x, points[i].y);
+        }
+    }
+
+    void rotate(float angle, point *p)
+    {
+        double radians = angle * M_PI / 180;
+        for(int i = 0; i < count; i++)
+        {
+            int x = points[i].x - p->x;
+            int y = points[i].y - p->y;
+            printf("dupa, x: %d, y: %d\n", points[i].x, points[i].y);
+            points[i].x = (x * cos(radians) - y * sin(radians)) + p->x;
+            points[i].y = (y * cos(radians) + x * sin(radians)) + p->y;
+            printf("dupc, x: %d, y: %d\n", points[i].x, points[i].y);
+        }
+    }
+
     void set_width(int w)
     {
         if(w % 2 == 0) {
