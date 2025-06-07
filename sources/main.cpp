@@ -187,6 +187,7 @@ int main(void)
         if(IsKeyDown(KEY_F)) last_key = KEY_F;
         if(IsKeyDown(KEY_A)) last_key = KEY_A;
         if(IsKeyDown(KEY_Q)) last_key = KEY_Q;
+        if(IsKeyDown(KEY_K)) last_key = KEY_K;
         if(IsKeyDown(KEY_SLASH)) last_key = KEY_SLASH;
         if(IsKeyDown(KEY_BACKSLASH)) last_key = KEY_BACKSLASH;
         if(IsKeyDown(KEY_EQUAL)) last_key = KEY_EQUAL;
@@ -207,6 +208,7 @@ int main(void)
             if(WasKeyDown(KEY_F)) fsm->load_from_file();
             if(WasKeyDown(KEY_A)) fsm->aa_on();
             if(WasKeyDown(KEY_Q)) fsm->aa_off();
+            if(WasKeyDown(KEY_K)) fsm->clip_poly();
             if(WasKeyDown(KEY_SLASH)) fsm->resize_poly();
             if(WasKeyDown(KEY_BACKSLASH)) fsm->rotate_poly();
             if(WasKeyDown(KEY_EQUAL)) fsm->change_width(true);

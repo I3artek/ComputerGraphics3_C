@@ -9,6 +9,7 @@
 #include "Lecture.h"
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include "math.h"
 
 #define USER_CLICK_ERROR 10
@@ -387,7 +388,7 @@ private:
     bool aa = false;
     shape_state state = NOT_FINISHED;
     // number of points is also the number of lines
-    const static int max_points = 20;
+    const static int max_points = 40;
     point points[max_points];
     int count = 0;
     int width = 1;
@@ -398,7 +399,43 @@ private:
             .b = 0,
             .a = 255
     };
+    std::vector<point> points_vector;
 public:
+    bool is_convex() {
+        // TODO: fill this
+        return true;
+    }
+
+    // check if the vertices are in clockwise order
+    bool is_clockwise() {
+        point u = {
+                points[1].x - points[0].x,
+                points[1].y - points[0].y
+        };
+        point v = {
+                points[2].x - points[1].x,
+                points[2].y - points[1].y
+        };
+        return u.x * v.y - u.y * v.x > 0;
+    }
+
+    void remake(std::vector<point> new_points) {
+        count = new_points.size();
+        for(int i = 0; i < new_points.size(); i++)
+        {
+            points[i] = new_points[i];
+        }
+        regenerate_lines();
+    }
+
+    std::vector<point> get_points() {
+        points_vector.clear();
+        for(int i = 0; i < count; i++)
+        {
+            points_vector.push_back(points[i]);
+        }
+        return points_vector;
+    }
 
     void resize(float scale, point *p)
     {
@@ -771,6 +808,114 @@ std::ifstream &operator>>(std::ifstream &is, Circle *l) {
     is >> l->radius;
     l->set_state(FINISHED);
     return is;
+}
+
+bool is_inside(point p, point clipBoundary[2], bool clockwise = true) {
+    // TODO: fill this
+    // https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
+    point a = clockwise ? clipBoundary[0] : clipBoundary[1];
+    point b = clockwise ? clipBoundary[1] : clipBoundary[0];
+    return (b.x - a.x)*(p.y - a.y) - (b.y - a.y)*(p.x - a.x) > 0;
+    return false;
+}
+
+// https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
+// Returns 1 if the lines intersect, otherwise 0. In addition, if the lines
+// intersect the intersection point may be stored in the floats i_x and i_y.
+bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y,
+                           float p2_x, float p2_y, float p3_x, float p3_y, float *i_x, float *i_y)
+{
+    float s1_x, s1_y, s2_x, s2_y;
+    s1_x = p1_x - p0_x;     s1_y = p1_y - p0_y;
+    s2_x = p3_x - p2_x;     s2_y = p3_y - p2_y;
+
+    float s, t;
+    s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
+    t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
+
+    if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
+    {
+        // Collision detected
+        if (i_x != NULL)
+            *i_x = p0_x + (t * s1_x);
+        if (i_y != NULL)
+            *i_y = p0_y + (t * s1_y);
+        return 1;
+    }
+
+    return 0; // No collision
+}
+
+// get the intersection point of line a->b with poly
+// this function assumes such a point exists
+point intersect(point a, point b, point clipBoundary[2]) {
+    // TODO: fill this
+    float x = 0.0, y = 0.0;
+    float ax = (float)a.x;
+    float ay = (float)a.y;
+    float bx = (float)b.x;
+    float by = (float)b.y;
+    point s = clipBoundary[0];
+    point p = clipBoundary[1];
+    get_line_intersection(ax, ay, bx, by,
+                          (float) s.x, (float) s.y,
+                          (float) p.x, (float) p.y,
+                          &x, &y);
+    return {(int)x, (int)y};
+}
+
+// poly - polygon to be clipped
+// clip - clipping polygon
+void clip(Polygon *poly, Polygon *clip_poly) {
+    // we clip only to convex polygons
+    if(!clip_poly->is_convex()) {
+        return;
+    }
+    printf("Doing clipping!\n");
+    // from the lecture slides
+    std::vector<point> clipEdges = clip_poly->get_points();
+    point clipBoundary[2] = {};
+    std::vector<point> inPoly;
+    std::vector<point> outPoly = poly->get_points();
+    clipBoundary[0] = clipEdges[clipEdges.size() - 1];
+    clipBoundary[1] = clipEdges[0];
+    bool clockwise = clip_poly->is_clockwise();
+    printf("clockwise: %d\n", clockwise);
+    for(int k = 0; k < clipEdges.size(); k++, clipBoundary[1] = clipEdges[k])
+    {
+        inPoly = outPoly;
+        outPoly.clear();
+        point i, p = inPoly[0], s = inPoly[inPoly.size() - 1]; // start with the last point
+        for(int j = 0; j < inPoly.size(); ++j, p = inPoly[j])
+        {
+            if(is_inside(p, clipBoundary, clockwise)) {
+                if(is_inside(s, clipBoundary, clockwise)) {
+                    printf("case 1.\n");
+                    outPoly.push_back(p);
+                    printf("adding %d, %d\n", p.x, p.y);
+                } else {
+                    printf("case 2.\n");
+                    i = intersect(s, p, clipBoundary);
+                    outPoly.push_back(i);
+                    outPoly.push_back(p);
+                    printf("adding %d, %d\n", i.x, i.y);
+                    printf("adding %d, %d\n", p.x, p.y);
+                }
+            } else if(is_inside(s, clipBoundary, clockwise)) {
+                printf("case 3.\n");
+                i = intersect(s, p, clipBoundary);
+                outPoly.push_back(i);
+                printf("adding %d, %d\n", i.x, i.y);
+            }
+            s = p;
+        }
+        clipBoundary[0] = clipBoundary[1];
+    }
+    // TODO: here remake poly with new points
+    poly->remake(outPoly);
+    // TODO: and probably destroy the clipping polygon (?)
+    clip_poly->set_state(NOT_FINISHED);
+    return;
 }
 
 

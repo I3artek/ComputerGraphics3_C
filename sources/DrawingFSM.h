@@ -19,7 +19,8 @@ enum state {
     DELETE,
     MOVE_SHAPE,
     RESIZE_POLY,
-    ROTATE_POLY
+    ROTATE_POLY,
+    CLIP_POLY
 };
 const char* states[] = {
         "DRAWING - SELECT NEW VERTEX",
@@ -28,8 +29,9 @@ const char* states[] = {
         "IDLE - CHOOSE ACTION BELOW",
         "DELETING - SELECT A SHAPE TO DELETE",
         "MOVING - SELECT AND MOVE A SHAPE",
-        "Resizing Polygon",
-        "rotating polygon"
+        "Resizing polygon",
+        "Rotating polygon",
+        "Clipping polygon"
 };
 
 class DrawingFSM {
@@ -298,6 +300,43 @@ public:
                 has_point = false;
                 current_shape = nullptr;
             }
+        } else if(state == CLIP_POLY) {
+            if(current_shape == nullptr) {
+                // select the shape
+                for(int i = 0; i < count; i++) {
+                    if(shapes[i]->get_state() != FINISHED) {
+                        continue;
+                    }
+                    p = shapes[i]->get_vertex(x, y);
+                    if(p != nullptr) {
+                        current_shape = shapes[i];
+                        break;
+                    }
+                }
+            } else {
+                Shape *clip_shape = nullptr;
+                for(int i = 0; i < count; i++) {
+                    if(shapes[i]->get_state() != FINISHED) {
+                        continue;
+                    }
+                    p = shapes[i]->get_vertex(x, y);
+                    if(p != nullptr) {
+                        clip_shape = shapes[i];
+                        break;
+                    }
+                }
+                Polygon *poly;
+                Polygon *clip_poly;
+                if(dynamic_cast<Polygon *>(current_shape) != nullptr &&
+                        dynamic_cast<Polygon *>(clip_shape) != nullptr) {
+                    poly = dynamic_cast<Polygon *>(current_shape);
+                    clip_poly = dynamic_cast<Polygon *>(clip_shape);
+                    clip(poly, clip_poly);
+                    redraw_all();
+                }
+                state = IDLE;
+                current_shape = nullptr;
+            }
         }
     }
 
@@ -398,6 +437,11 @@ public:
             shapes[i]->set_antialiasing(AA);
         }
         redraw_all();
+    }
+
+    void clip_poly()
+    {
+        state = CLIP_POLY;
     }
 
     void change_width(bool more)
