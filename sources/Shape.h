@@ -11,6 +11,7 @@
 #include <fstream>
 #include <algorithm>
 #include "math.h"
+#include "AET.h"
 
 #define USER_CLICK_ERROR 10
 
@@ -381,6 +382,9 @@ std::ifstream& operator>>(std::ifstream& is, Line *l)
     return is;
 }
 
+edge *AET;
+edge *ET[CANVAS_SIZE];
+
 class Polygon: public Shape {
     friend std::ifstream& operator>>(std::ifstream& is, Polygon *l);
     friend std::ofstream& operator<<(std::ofstream& os, const Polygon *l);
@@ -405,6 +409,8 @@ public:
         // TODO: fill this
         return true;
     }
+
+    bool filled = true;
 
     // check if the vertices are in clockwise order
     bool is_clockwise() {
@@ -512,6 +518,79 @@ public:
         {
             lines[i].draw();
         }
+        if(filled) {
+            fill();
+        }
+    }
+
+    void fill() {
+        // clear edge tables
+        std::vector<edge *> aet;
+        for(int i = 0; i < CANVAS_SIZE; i++)
+        {
+            ET[i] = nullptr;
+        }
+        // fill the edge table
+        point s = points[count - 1];
+        point p = points[0];
+        for(int j = 0; j < count; j++, p = points[j])
+        {
+            printf("[%s:%d] j: %d\n", __func__, __LINE__, j);
+            int y_min = s.y < p.y ? s.y : p.y;
+            auto e = new edge(s.x, s.y, p.x, p.y);
+            printf("[%s:%d] y: %d\n", __func__, __LINE__, y_min);
+            printf("[%s:%d] head: %p\n", __func__, __LINE__, ET[y_min]);
+            insert(&ET[y_min], e);
+            printf("[%s:%d] head: %p\n", __func__, __LINE__, ET[y_min]);
+            s = p;
+        }
+        // actual color filling
+        for(int y = 0; y < CANVAS_SIZE;)
+        {
+            insert_to_vector(&ET[y], aet);
+            if(aet.size() < 1) {
+                y++;
+                continue;
+            }
+            printf("\n[%s:%d] y: %d - scanning\n", __func__, __LINE__, y);
+            std::sort(aet.begin(), aet.end(),
+                      [](edge *e1, edge *e2){ return e1->x_min < e2->x_min;});
+            for(int i = 0; i < aet.size(); i++)
+            {
+                printf("X: %d, ", aet[i]->x_min);
+            }
+            printf("\n");
+            // TODO: fill pixels between pairs
+            bool filling = true;
+            int next = 1;
+            //printf("[%s:%d] aet size: %d\n", __func__, __LINE__, aet.size());
+            //printf("[%s:%d] aet[0]: %p\n", __func__, __LINE__, aet[0]);
+            for(int x = aet[0]->x_min; x < aet[aet.size() - 1]->x_min + 1; x++)
+            {
+                if(filling) {
+                    //put_pixel(x, y, color.r, color.g, color.b);
+                    put_pixel(x, y, color.r, color.g, color.b);
+
+                }
+                // if we arrive at an edge, change the filling status
+                while(next < aet.size() && x == aet[next]->x_min) {
+                    if(filling) {
+                        put_pixel(x + 1, y, color.r, color.g, color.b);
+                    }
+                    filling = !filling;
+                    next++;
+                }
+            }
+            y++;
+            // TODO: remove all edges from AET where y_max == y
+            auto sth = std::remove_if(aet.begin(), aet.end(),
+                           [y](edge *e) {
+                               return e->y_max == y;
+            });
+            aet.erase(sth, aet.end());
+            // TODO e.update_x() on all edges in AET
+            std::for_each(aet.begin(), aet.end(), [](edge *e) {e->update_x();});
+        }
     }
 
     point *get_vertex(int x, int y) {
@@ -541,6 +620,11 @@ public:
 
     shape_state add_point(int x, int y)
     {
+        if(count > 0 && points[count - 1].x == x && points[count - 1].y == y)
+        {
+            // don't duplicate points in case of multiple clicks
+            return get_state();
+        }
         // if clicked near the start point, finish the shape
         int radius = 10;
         int x_max = points[0].x + radius;
@@ -774,6 +858,7 @@ public:
     shape_state set_state(shape_state s)
     {
         state = s;
+        return state;
     }
     void move_shape(int dx, int dy)
     {
