@@ -50,6 +50,7 @@ int main(void)
     printf("D - delete a shape containing chosen point\n");
     printf("M - move a shape\n");
 
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
     SetTargetFPS(60);
 
